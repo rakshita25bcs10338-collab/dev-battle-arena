@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useGame } from "../context/GameContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 function ProblemLogger() {
   const { addProblem } = useGame();
   const navigate = useNavigate();
 
+  // Unified state for all form fields
   const [form, setForm] = useState({
     title: "",
     difficulty: "Easy",
@@ -14,32 +16,36 @@ function ProblemLogger() {
     notes: "",
   });
 
-  const [submitted, setSubmitted] = useState(false);
-
+  // Handles input changes for all fields using the 'name' attribute
   function handleChange(e) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   function handleSubmit() {
-    if (!form.title.trim() || !form.topic.trim()) {
-      alert("Please fill in problem title and topic!");
+    // 1. Validation Logic
+    if (!form.title.trim()) {
+      toast.error("⚔️ Guardian! Enter a problem title!", { theme: "dark" });
       return;
     }
+    if (!form.topic.trim()) {
+      toast.warn("📜 Topic is required to log the scroll!", { theme: "dark" });
+      return;
+    }
+
+    // 2. Add to Global Context (Game State)
     addProblem(form);
-    setSubmitted(true);
+    
+    // 3. Success Notification
+    toast.success(`🔥 ${form.title} Defeated! XP Added.`, {
+      position: "top-right",
+      autoClose: 2000,
+      theme: "dark",
+    });
+
+    // 4. Programmatic Routing to Dashboard
     setTimeout(() => {
       navigate("/dashboard");
-    }, 1500);
-  }
-
-  if (submitted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div className="text-6xl">🎉</div>
-        <h2 className="text-2xl font-bold text-purple-400">Problem Logged!</h2>
-        <p className="text-gray-400">XP added! Redirecting to dashboard...</p>
-      </div>
-    );
+    }, 1000);
   }
 
   return (
@@ -57,7 +63,7 @@ function ProblemLogger() {
             value={form.title}
             onChange={handleChange}
             placeholder="e.g. Two Sum"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
           />
         </div>
 
@@ -69,7 +75,7 @@ function ProblemLogger() {
             value={form.topic}
             onChange={handleChange}
             placeholder="e.g. Arrays, Binary Trees, DP"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
           />
         </div>
 
@@ -80,7 +86,7 @@ function ProblemLogger() {
             name="difficulty"
             value={form.difficulty}
             onChange={handleChange}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 cursor-pointer"
           >
             <option value="Easy">🟢 Easy (+10 XP)</option>
             <option value="Medium">🟡 Medium (+25 XP)</option>
@@ -95,7 +101,7 @@ function ProblemLogger() {
             name="platform"
             value={form.platform}
             onChange={handleChange}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 cursor-pointer"
           >
             <option>LeetCode</option>
             <option>HackerRank</option>
@@ -114,14 +120,14 @@ function ProblemLogger() {
             onChange={handleChange}
             placeholder="What did you learn? Any tricks?"
             rows={3}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 resize-none"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 resize-none transition-colors"
           />
         </div>
 
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           onClick={handleSubmit}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg transition"
+          className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold py-3 rounded-lg transition-all duration-200 shadow-lg shadow-purple-900/20"
         >
           ⚔️ Submit & Earn XP
         </button>

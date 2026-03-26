@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 export const GameContext = createContext();
 
@@ -22,84 +23,57 @@ function getMonday(d) {
 
 export function GameProvider({ children }) {
   const [loaded, setLoaded]         = useState(false);
-  const [username, setUsername]     = useState("");
   const [xp, setXp]                 = useState(0);
   const [level, setLevel]           = useState(1);
-  const [streak, setStreak]         = useState(0);
   const [problems, setProblems]     = useState([]);
-  const [lastSolved, setLastSolved] = useState(null);
-  const [weeklyGoal, setWeeklyGoal] = useState(10); // default goal = 10
+  const [weeklyGoal, setWeeklyGoal] = useState(5); 
 
-  // LOAD
   useEffect(() => {
     const saved = localStorage.getItem("devBattleState");
     if (saved) {
       const s = JSON.parse(saved);
-      setUsername(s.username ?? "");
-      setXp(s.xp ?? 0);
-      setLevel(s.level ?? 1);
-      setStreak(s.streak ?? 0);
-      setProblems(s.problems ?? []);
-      setLastSolved(s.lastSolved ?? null);
-      setWeeklyGoal(s.weeklyGoal ?? 10);
+      setXp(s.xp || 0);
+      setLevel(s.level || 1);
+      setProblems(s.problems || []);
+      setWeeklyGoal(s.weeklyGoal || 5);
     }
     setLoaded(true);
   }, []);
 
-  // SAVE
   useEffect(() => {
     if (!loaded) return;
-    localStorage.setItem("devBattleState", JSON.stringify({
-      username, xp, level, streak, problems, lastSolved, weeklyGoal
-    }));
-  }, [loaded, username, xp, level, streak, problems, lastSolved, weeklyGoal]);
+    localStorage.setItem("devBattleState", JSON.stringify({ xp, level, problems, weeklyGoal }));
+  }, [loaded, xp, level, problems, weeklyGoal]);
 
   function addProblem(problem) {
     const earned = XP_MAP[problem.difficulty] || 10;
     const newXp = xp + earned;
     setXp(newXp);
     setLevel(Math.floor(newXp / 100) + 1);
-    setProblems(prev => [{ ...problem, id: Date.now(), xpEarned: earned }, ...prev]);
-
-    const today     = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    if (lastSolved === today) {
-      // already solved today
-    } else if (lastSolved === yesterday) {
-      setStreak(prev => prev + 1);
-    } else {
-      setStreak(1);
-    }
-    setLastSolved(today);
+    setProblems(prev => [{ ...problem, id: Date.now(), bookmarked: false }, ...prev]);
   }
 
-  // count problems solved this week
-  const thisMonday = getMonday(new Date());
-  const weeklyCount = problems.filter(p => {
-    const solvedMonday = getMonday(new Date(p.id)); // p.id is Date.now()
-    return solvedMonday === thisMonday;
-  }).length;
+  function deleteProblem(id) {
+    setProblems(prev => prev.filter(p => p.id !== id));
+    toast.error("Battle record erased!", { theme: "dark" });
+  }
 
-  const unlockedBadges   = ALL_BADGES.filter(b => xp >= b.xpNeeded);
-  const xpInCurrentLevel = xp % 100;
-  const xpToNextLevel    = 100 - xpInCurrentLevel;
+  function toggleBookmark(id) {
+    setProblems(prev => prev.map(p => p.id === id ? { ...p, bookmarked: !p.bookmarked } : p));
+  }
+
+  const weeklyCount = problems.filter(p => getMonday(new Date(p.id)) === getMonday(new Date())).length;
 
   return (
     <GameContext.Provider value={{
-      username, setUsername,
-      xp, level, streak,
-      problems, addProblem,
-      unlockedBadges,
-      xpInCurrentLevel,
-      xpToNextLevel,
-      weeklyGoal, setWeeklyGoal,
-      weeklyCount,
+      xp, level, problems, addProblem, deleteProblem, toggleBookmark,
+      badges: ALL_BADGES,
+      weeklyGoal, setWeeklyGoal, // Exported for editing
+      weeklyCount
     }}>
       {children}
     </GameContext.Provider>
   );
 }
 
-export function useGame() {
-  return useContext(GameContext);
-}
+export const useGame = () => useContext(GameContext);

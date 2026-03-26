@@ -3,159 +3,121 @@ import { useGame } from "../context/GameContext";
 import XPBar from "../components/XPBar";
 import BadgeCard from "../components/BadgeCard";
 
-const ALL_BADGES = [
-  { id: 1, name: "First Blood",   emoji: "🩸", desc: "Solve your first problem",  xpNeeded: 10  },
-  { id: 2, name: "Grinder",       emoji: "💪", desc: "Reach 100 XP",              xpNeeded: 100 },
-  { id: 3, name: "Code Warrior",  emoji: "⚔️", desc: "Reach 250 XP",              xpNeeded: 250 },
-  { id: 4, name: "Algorithm God", emoji: "🧠", desc: "Reach 500 XP",              xpNeeded: 500 },
-];
-
 function Dashboard() {
-  const { 
-    username, setUsername, 
-    xp, level, streak, 
-    problems, unlockedBadges, 
-    xpInCurrentLevel, xpToNextLevel,
-    weeklyGoal, setWeeklyGoal, weeklyCount
-  } = useGame();
-  
-  const [nameInput, setNameInput] = useState("");
+  const { xp, level, problems, badges, deleteProblem, toggleBookmark, weeklyGoal, setWeeklyGoal, weeklyCount } = useGame();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterDifficulty, setFilterDifficulty] = useState("All");
 
-  if (!username) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-        <div className="text-5xl">⚔️</div>
-        <h1 className="text-3xl font-bold text-purple-400">Welcome to Dev Battle Arena!</h1>
-        <p className="text-gray-400">Enter your name to begin your journey</p>
-        <input
-          type="text"
-          placeholder="Your name..."
-          value={nameInput}
-          onChange={(e) => setNameInput(e.target.value)}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-64 focus:outline-none focus:border-purple-500"
-        />
-        <button
-          onClick={() => { if (nameInput.trim()) setUsername(nameInput.trim()); }}
-          className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-bold transition"
-        >
-          Start My Journey 🚀
-        </button>
-      </div>
-    );
-  }
+  const filteredProblems = problems.filter(p => {
+    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterDifficulty === "All" || p.difficulty === filterDifficulty;
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleEditGoal = () => {
+    const newGoal = prompt("Target problems to solve this week:", weeklyGoal);
+    if (newGoal && !isNaN(newGoal)) {
+      setWeeklyGoal(Number(newGoal));
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8 text-gray-200">
+      <header className="text-center space-y-4">
+        <h1 className="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 uppercase italic">
+          Warrior Dashboard
+        </h1>
+        <XPBar xp={xp} level={level} />
+      </header>
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Welcome back, <span className="text-purple-400">{username}</span>! 👋</h1>
-        <p className="text-gray-400 mt-1">Keep grinding. Every problem makes you stronger.</p>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-          <div className="text-4xl font-bold text-purple-400">{level}</div>
-          <div className="text-gray-400 text-sm mt-1">Current Level</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-          <div className="text-4xl font-bold text-yellow-400">{xp}</div>
-          <div className="text-gray-400 text-sm mt-1">Total XP</div>
-        </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
-          <div className="text-4xl font-bold text-orange-400">{streak} 🔥</div>
-          <div className="text-gray-400 text-sm mt-1">Day Streak</div>
-        </div>
-      </div>
-
-      {/* XP Bar */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-8">
-        <div className="flex justify-between text-sm text-gray-400 mb-3">
-          <span>Level {level}</span>
-          <span>{xpToNextLevel} XP to Level {level + 1}</span>
-        </div>
-        <XPBar xpInCurrentLevel={xpInCurrentLevel} />
-      </div>
-
-      {/* Badges */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-8">
-        <h2 className="text-lg font-bold mb-4">🏆 Badges</h2>
-        <div className="grid grid-cols-4 gap-4">
-          {ALL_BADGES.map(badge => (
-            <BadgeCard
-              key={badge.id}
-              badge={badge}
-              unlocked={unlockedBadges.some(b => b.id === badge.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Weekly Goal */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">🎯 Weekly Goal</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-400">Target:</span>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={weeklyGoal}
-              onChange={(e) => setWeeklyGoal(Number(e.target.value))}
-              className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-sm focus:outline-none focus:border-purple-500"
-            />
-            <span className="text-sm text-gray-400">problems</span>
+      {/* Weekly Goal Progress Card */}
+      <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+        <div className="flex justify-between items-end mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Weekly Conquest</p>
+              <button onClick={handleEditGoal} className="text-[10px] text-purple-500 hover:underline">Edit Goal</button>
+            </div>
+            <h2 className="text-xl font-bold">Goal Progress</h2>
+          </div>
+          <div className="text-right">
+             <span className="text-2xl font-black text-purple-400">{weeklyCount}</span>
+             <span className="text-gray-600 font-bold"> / {weeklyGoal}</span>
           </div>
         </div>
-
-        <div className="flex justify-between text-sm text-gray-400 mb-3">
-          <span>{weeklyCount} solved this week</span>
-          <span>{Math.max(weeklyGoal - weeklyCount, 0)} remaining</span>
+        <div className="h-4 w-full bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+          <div 
+            className="h-full bg-gradient-to-r from-purple-600 to-pink-500 transition-all duration-1000 shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
+            style={{ width: `${Math.min((weeklyCount/weeklyGoal)*100, 100)}%` }} 
+          />
         </div>
-
-        <div className="w-full bg-gray-700 rounded-full h-4">
-          <div
-            className="h-4 rounded-full transition-all duration-500 bg-green-500"
-            style={{ width: `${Math.min((weeklyCount / weeklyGoal) * 100, 100)}%` }}
-          ></div>
-        </div>
-
         {weeklyCount >= weeklyGoal && (
-          <div className="mt-3 text-center text-green-400 font-bold text-sm">
-            🎉 Weekly goal crushed! You're a beast!!
-          </div>
+          <p className="text-center text-[10px] text-green-400 font-bold mt-2 uppercase tracking-tighter animate-bounce">
+            🔥 Legendary! Weekly goal accomplished!
+          </p>
         )}
       </div>
 
-      {/* Recent Problems */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="text-lg font-bold mb-4">📋 Recent Problems</h2>
-        {problems.length === 0 ? (
-          <p className="text-gray-500 text-sm">No problems logged yet. Go grind! 💪</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {problems.slice(0, 5).map(p => (
-              <div key={p.id} className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
+      {/* Search & Difficulty Filter */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <input 
+          className="flex-1 bg-gray-900 border border-gray-800 p-4 rounded-xl focus:border-purple-500 outline-none transition-all shadow-inner" 
+          placeholder="Search through your battle history..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select 
+          className="bg-gray-900 border border-gray-800 p-4 rounded-xl outline-none cursor-pointer hover:bg-gray-800 transition"
+          value={filterDifficulty}
+          onChange={(e) => setFilterDifficulty(e.target.value)}
+        >
+          <option value="All">All Difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+
+      {/* Problems List */}
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+        {filteredProblems.length > 0 ? (
+           filteredProblems.map(p => (
+            <div key={p.id} className="p-5 border-b border-gray-800 flex justify-between items-center group hover:bg-gray-800/40 transition-colors">
+              <div className="flex items-center gap-5">
+                <button onClick={() => toggleBookmark(p.id)} className={`text-xl transition-transform hover:scale-125 ${p.bookmarked ? "text-yellow-400" : "text-gray-700"}`}>
+                  {p.bookmarked ? '★' : '☆'}
+                </button>
                 <div>
-                  <div className="font-medium">{p.title}</div>
-                  <div className="text-xs text-gray-400">{p.platform} • {p.topic}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                    p.difficulty === "Easy" ? "bg-green-900 text-green-400" :
-                    p.difficulty === "Medium" ? "bg-yellow-900 text-yellow-400" :
-                    "bg-red-900 text-red-400"
-                  }`}>{p.difficulty}</span>
-                  <span className="text-purple-400 text-sm font-bold">+{p.xpEarned} XP</span>
+                  <p className="font-bold text-gray-100">{p.title}</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-medium">{p.topic} • {p.platform}</p>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-6">
+                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${
+                  p.difficulty === 'Easy' ? 'bg-green-950 text-green-400' :
+                  p.difficulty === 'Medium' ? 'bg-yellow-950 text-yellow-400' :
+                  'bg-red-950 text-red-400'
+                }`}>
+                  {p.difficulty}
+                </span>
+                <button onClick={() => deleteProblem(p.id)} className="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-500 transition-all">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="p-12 text-center text-gray-600 italic">No records found in the arena.</div>
         )}
       </div>
 
+      {/* Badges Section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-bold uppercase tracking-tighter text-gray-400 px-1">Unlocked Artifacts</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {badges.map(b => <BadgeCard key={b.id} badge={b} currentXP={xp} />)}
+        </div>
+      </section>
     </div>
   );
 }
